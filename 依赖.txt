@@ -1,0 +1,8 @@
+组件	库/项目	许可证
+麦克风采集	flexaudio	MIT
+WASAPI Loopback	flexaudio	MIT
+输出到虚拟设备	cpal	MIT
+AEC	webrtc-audio-processing	BSD
+虚拟音频设备	Scream	MS-PL
+HTTP/WebSocket	axum	MIT
+前端	React + Vite	MIT

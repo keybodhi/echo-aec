@@ -1,0 +1,18 @@
+# Build outputs
+audio-core/target/
+web-ui/node_modules/
+web-ui/dist/
+
+# Test WAV files
+*.wav
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

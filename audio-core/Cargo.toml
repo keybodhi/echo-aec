@@ -1,0 +1,21 @@
+[package]
+name = "echo-aec-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+flexaudio = "0.2"
+cpal = "0.15"
+webrtc-audio-processing = { version = "~2.0", features = ["bundled"] }
+webrtc-audio-processing-config = "~2.0"
+axum = { version = "0.7", features = ["ws"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tower-http = { version = "0.5", features = ["cors"] }
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+parking_lot = "0.12"
+futures-util = "0.3"
+symphonia = { version = "0.5", features = ["aac", "isomp4"] }
