@@ -29,8 +29,7 @@ VB-CABLE 是带数字签名的虚拟音频驱动，安装简单、无需关闭 S
 - **CABLE Input (VB-Audio Virtual Cable)** —— 播放设备（我们的程序往这里写音频）
 - **CABLE Output (VB-Audio Virtual Cable)** —— 录音设备（会议软件从这里读音频）
 
-> VB-CABLE 是免费软件（Donationware，可自愿捐款），非开源。
-> 如需开源替代，可用 [Scream](https://github.com/duncanthrax/scream)（MS-PL），但需关闭 Secure Boot 并启用测试签名模式，安装较麻烦。
+> VB-CABLE 是免费软件（Donationware，可自愿捐款）。
 
 ### 第二步：运行 Echo AEC
 
@@ -124,8 +123,7 @@ C:\echo-aec\tauri.bat dev
 
 | 软件 | 用途 | 许可证 |
 |------|------|--------|
-| [VB-CABLE](https://vb-audio.com/Cable/) | Windows 虚拟声卡驱动 | 免费软件（Donationware，非开源） |
-| [Scream](https://github.com/duncanthrax/scream) | 开源虚拟声卡（备选） | MS-PL |
+| [VB-CABLE](https://vb-audio.com/Cable/) | Windows 虚拟声卡驱动 | 免费软件（Donationware） |
 
 ### 参考项目
 

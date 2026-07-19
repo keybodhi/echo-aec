@@ -128,7 +128,7 @@ export default function App() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm text-gray-400">虚拟麦克风 (Scream 输出)</label>
+            <label className="text-sm text-gray-400">虚拟麦克风 (CABLE Input)</label>
             <select
               className="w-full bg-gray-700 rounded px-3 py-2 text-sm"
               value={virtualMicDevice}
