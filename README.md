@@ -16,7 +16,17 @@
 
 ### 第一步：安装 VB-CABLE 虚拟声卡
 
-VB-CABLE 是带数字签名的虚拟音频驱动，安装简单、无需关闭 Secure Boot。
+**方式一（推荐）：应用内一键安装**
+
+本应用已按 [VB-Audio 官方许可](https://vb-audio.com/Services/licensing.htm)捆绑了 VB-CABLE 官方安装包：
+
+1. 运行 `echo-aec.exe`
+2. 若未安装 VB-CABLE，界面会提示"未检测到 VB-CABLE 虚拟声卡"
+3. 点击 **一键安装 VB-CABLE**，在 UAC 弹窗中确认
+4. 在 VB-Audio 安装窗口中点击 **Install Driver**
+5. 完成后建议重启电脑（设备自动设为默认虚拟麦克风）
+
+**方式二：手动下载安装**
 
 1. 打开官网下载页：**https://vb-audio.com/Cable/**
 2. 点击 **Download** 下载 `VBCABLE_Driver_Packxx.zip`
@@ -30,6 +40,16 @@ VB-CABLE 是带数字签名的虚拟音频驱动，安装简单、无需关闭 S
 - **CABLE Output (VB-Audio Virtual Cable)** —— 录音设备（会议软件从这里读音频）
 
 > VB-CABLE 是免费软件（Donationware，可自愿捐款）。
+
+### 关于捆绑分发（官方许可）
+
+VB-Audio 官方明确**允许将 VB-CABLE 安装包随本应用一起分发**（免费或商业应用均可），甚至允许嵌入安装包静默安装，依据其[许可条款](https://vb-audio.com/Services/licensing.htm)：
+
+- 用户必须能看到并识别出 VB-CABLE 是 VB-Audio 的产品
+- 必须明确标注：**VB-CABLE 来源 www.vb-cable.com，属 Donationware，欢迎捐款**
+- 面向企业/机构批量分发（员工无法自行购买）时需按量购买许可证（100 份起约 3.61 EUR/份）
+
+本应用界面中已包含上述归属标注，符合分发条件。
 
 ### 第二步：运行 Echo AEC
 

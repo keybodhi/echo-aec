@@ -104,6 +104,45 @@ async fn get_config() -> Result<SavedConfig, String> {
     Ok(SavedConfig::load())
 }
 
+/// 未修改的 VB-CABLE 官方安装程序（VB-Audio 许可允许原样捆绑分发）
+static VBCABLE_SETUP: &[u8] = include_bytes!("../resources/vbcable/VBCABLE_Setup_x64.exe");
+
+#[tauri::command]
+async fn install_vbcable() -> Result<String, String> {
+    let temp = std::env::temp_dir().join("VBCABLE_Setup_x64.exe");
+    std::fs::write(&temp, VBCABLE_SETUP).map_err(|e| e.to_string())?;
+
+    // 安装程序自身请求管理员权限（UAC 提示中会显示 VB-Audio 品牌，满足分发条款）
+    std::process::Command::new(&temp)
+        .spawn()
+        .map_err(|e| format!("启动安装程序失败: {}", e))?;
+
+    Ok("VB-CABLE 安装程序已启动，请按提示点击 Install Driver，完成后建议重启电脑".to_string())
+}
+
+#[tauri::command]
+async fn refresh_devices(
+    state: tauri::State<'_, Arc<tauri::async_runtime::Mutex<AppState>>>,
+) -> Result<DeviceListResponse, String> {
+    let new_mgr = DeviceManager::new().map_err(|e| e.to_string())?;
+    let mut state = state.lock().await;
+    state.device_mgr = new_mgr;
+
+    let mics = state.device_mgr.mic_devices().iter().map(|d| DeviceInfo {
+        id: d.id.clone(),
+        name: d.name.clone(),
+    }).collect();
+    let loopbacks = state.device_mgr.loopback_devices().iter().map(|d| DeviceInfo {
+        id: d.id.clone(),
+        name: d.name.clone(),
+    }).collect();
+    let outputs = state.device_mgr.output_devices().iter().map(|d| DeviceInfo {
+        id: d.id.clone(),
+        name: d.name.clone(),
+    }).collect();
+    Ok(DeviceListResponse { mics, loopbacks, outputs })
+}
+
 fn main() {
     tracing_subscriber::fmt::init();
 
@@ -122,6 +161,8 @@ fn main() {
             start_processing,
             stop_processing,
             get_config,
+            install_vbcable,
+            refresh_devices,
         ])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;

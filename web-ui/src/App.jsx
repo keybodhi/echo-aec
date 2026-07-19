@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 
+const CABLE_INPUT_KEYWORD = 'CABLE Input'
+
 export default function App() {
   const [devices, setDevices] = useState({ mics: [], loopbacks: [], outputs: [] })
   const [micDevice, setMicDevice] = useState('')
@@ -8,13 +10,25 @@ export default function App() {
   const [virtualMicDevice, setVirtualMicDevice] = useState('')
   const [isRunning, setIsRunning] = useState(false)
   const [notice, setNotice] = useState('')
+  const [vbcableInstalled, setVbcableInstalled] = useState(true)
+  const [installing, setInstalling] = useState(false)
+  const [installMsg, setInstallMsg] = useState('')
+
+  function findCableInput(outputs) {
+    return outputs.find(d => d.name.includes(CABLE_INPUT_KEYWORD))
+  }
+
+  async function loadDevices() {
+    const devs = await invoke('list_devices')
+    setDevices(devs)
+    setVbcableInstalled(!!findCableInput(devs.outputs))
+    return devs
+  }
 
   useEffect(() => {
     async function init() {
       try {
-        const devs = await invoke('list_devices')
-        setDevices(devs)
-
+        const devs = await loadDevices()
         const cfg = await invoke('get_config')
         const missing = []
 
@@ -37,6 +51,11 @@ export default function App() {
             setVirtualMicDevice(cfg.virtual_mic_device)
           } else {
             missing.push(`虚拟麦克风 "${cfg.virtual_mic_device}"`)
+          }
+        } else {
+          const cable = findCableInput(devs.outputs)
+          if (cable) {
+            setVirtualMicDevice(cable.id)
           }
         }
 
@@ -61,6 +80,32 @@ export default function App() {
     }, 1000)
     return () => clearInterval(interval)
   }, [])
+
+  const handleInstallVbcable = async () => {
+    setInstalling(true)
+    setInstallMsg('')
+    try {
+      const msg = await invoke('install_vbcable')
+      setInstallMsg(msg)
+      setTimeout(async () => {
+        try {
+          const devs = await invoke('refresh_devices')
+          setDevices(devs)
+          const cable = findCableInput(devs.outputs)
+          setVbcableInstalled(!!cable)
+          if (cable && !virtualMicDevice) {
+            setVirtualMicDevice(cable.id)
+          }
+        } catch (e) {
+          console.error(e)
+        }
+        setInstalling(false)
+      }, 8000)
+    } catch (e) {
+      setInstallMsg('安装失败: ' + e)
+      setInstalling(false)
+    }
+  }
 
   const handleStart = async () => {
     if (!micDevice || !loopbackDevice || !virtualMicDevice) {
@@ -95,6 +140,20 @@ export default function App() {
         {notice && (
           <div className="bg-yellow-900/50 border border-yellow-600 rounded px-3 py-2 text-sm text-yellow-200">
             {notice}
+          </div>
+        )}
+
+        {!vbcableInstalled && (
+          <div className="bg-red-900/50 border border-red-600 rounded px-3 py-3 text-sm text-red-200 space-y-2">
+            <p>未检测到 VB-CABLE 虚拟声卡，这是本软件正常工作的必需组件。</p>
+            <button
+              onClick={handleInstallVbcable}
+              disabled={installing}
+              className="w-full py-2 rounded bg-red-600 hover:bg-red-700 font-semibold disabled:opacity-50"
+            >
+              {installing ? '安装中（请在 UAC 弹窗中确认）...' : '一键安装 VB-CABLE（内置官方安装包）'}
+            </button>
+            {installMsg && <p className="text-yellow-200">{installMsg}</p>}
           </div>
         )}
 
@@ -156,6 +215,11 @@ export default function App() {
 
         <div className="text-center text-sm text-gray-500">
           状态: {isRunning ? '运行中' : '已停止'}
+        </div>
+
+        <div className="text-center text-xs text-gray-600 border-t border-gray-700 pt-3">
+          虚拟声卡驱动: VB-CABLE (<a href="https://vb-audio.com/Cable/" target="_blank" rel="noreferrer" className="text-gray-500 underline hover:text-gray-400">www.vb-cable.com</a>)
+          <br />VB-CABLE 是 Donationware，欢迎捐款支持
         </div>
       </div>
     </div>
