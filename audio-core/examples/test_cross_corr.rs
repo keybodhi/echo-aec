@@ -185,5 +185,64 @@ fn main() -> Result<()> {
         println!("  Voice Output RMS: {:.6}", calculate_rms(voice_out));
     }
 
+    // ===== Echo scenario: mic = voice + echo(far_end), ref = far_end =====
+    println!("\n=== Echo cancellation test (lag-compensated) ===");
+    {
+        use symphonia::core::audio::{AudioBufferRef as _, Signal as _};
+        let far_file = Path::new(r"C:\Users\Key\Documents\录音\录音 (39).m4a");
+        let far_end = decode_file(far_file)?;
+
+        // Build echo: 100ms delay, -10dB attenuation
+        let delay_samples = 100 * SAMPLE_RATE as usize / 1000;
+        let mut mic_in = near_end.clone();
+        for i in delay_samples..mic_in.len() {
+            if (i - delay_samples) < far_end.len() {
+                mic_in[i] += far_end[i - delay_samples] * 0.316;
+            }
+        }
+        // Pad far_end to same length
+        let mut ref_sig = far_end.clone();
+        if ref_sig.len() < mic_in.len() { ref_sig.resize(mic_in.len(), 0.0); }
+
+        let processor = Processor::new(SAMPLE_RATE)?;
+        let mut config = Config::default();
+        config.echo_canceller = Some(EchoCanceller::Full { stream_delay_ms: None });
+        processor.set_config(config);
+
+        let mut aec_out = Vec::new();
+        let num_frames = mic_in.len() / FRAME_SIZE;
+        for i in 0..num_frames {
+            let start = i * FRAME_SIZE;
+            let end = start + FRAME_SIZE;
+            let mut ref_frame: Vec<Vec<f32>> = vec![ref_sig[start..end].to_vec()];
+            let mut mic_frame: Vec<Vec<f32>> = vec![mic_in[start..end].to_vec()];
+            processor.process_render_frame(&mut ref_frame)?;
+            processor.process_capture_frame(&mut mic_frame)?;
+            aec_out.extend_from_slice(&mic_frame[0]);
+        }
+
+        // Compare AEC output with clean near_end (lag-compensated)
+        let skip = 2 * SAMPLE_RATE as usize; // skip 2s for convergence
+        let window = 9600.min(aec_out.len() - skip);
+        let mut best_pos = skip;
+        let mut best_rms = 0.0f32;
+        for pos in (skip..aec_out.len() - window).step_by(480) {
+            let rms = calculate_rms(&near_end[pos..pos + window]);
+            if rms > best_rms { best_rms = rms; best_pos = pos; }
+        }
+
+        let clean = &near_end[best_pos..best_pos + window];
+        let out = &aec_out[best_pos..best_pos + window];
+        let mic_seg = &mic_in[best_pos..best_pos + window];
+
+        let (lag, corr) = cross_correlation(clean, out, 960);
+        println!("  Voice segment pos={}:", best_pos);
+        println!("    Mic-in (voice+echo) RMS: {:.6}", calculate_rms(mic_seg));
+        println!("    Clean voice        RMS: {:.6}", calculate_rms(clean));
+        println!("    AEC output         RMS: {:.6}", calculate_rms(out));
+        println!("    Corr(AEC out, clean voice) at lag={} ({:.1}ms): {:.4}",
+            lag, lag as f32 * 1000.0 / SAMPLE_RATE as f32, corr);
+    }
+
     Ok(())
 }

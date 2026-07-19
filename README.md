@@ -1,6 +1,6 @@
 # Echo AEC - 麦克风回声消除软件
 
-基于 WebRTC AEC3 的实时回声消除工具。通过虚拟音频设备将处理后的无回声麦克风信号提供给系统使用。
+基于 WebRTC AEC3 的实时回声消除工具（Windows 桌面应用）。通过虚拟音频设备将处理后的无回声麦克风信号提供给系统使用。
 
 ## 架构
 
@@ -9,8 +9,110 @@
 系统音频   → flexaudio WASAPI Loopback → WebRTC AEC3 (process_render_frame)
 ```
 
-- 后端：Rust + axum（HTTP/WebSocket API，端口 3000）
-- 前端：React + Vite + TailwindCSS（端口 5173）
+- 应用框架：Tauri v2（Rust 后端 + WebView2 前端，单 .exe）
+- 前端：React + Vite + TailwindCSS
+
+## 运行
+
+### 前置要求
+
+1. **虚拟音频设备驱动**：安装 [Scream](https://github.com/duncanthrax/scream)（Windows 虚拟声卡，MS-PL 许可证）
+2. **Rust 工具链**：https://rustup.rs
+3. **构建工具**（编译 webrtc-audio-processing 需要）：
+   - Visual Studio Build Tools（C++ 桌面开发）
+   - Python 3 + `pip install meson`
+   - Ninja（VS 自带或 `winget install Ninja-build.Ninja`）
+   - Git for Windows（提供 `cp` 命令）
+4. **Node.js**：前端构建
+
+### 编译
+
+由于 webrtc-audio-processing 在 Windows 上编译需要特殊环境（MSVC + meson + ninja + libclang + C++20），使用项目自带的构建脚本：
+
+```bat
+C:\echo-aec\tauri.bat build
+```
+
+产物：
+- 可执行文件：`src-tauri\target\release\echo-aec.exe`
+- 安装包：`src-tauri\target\release\bundle\`
+
+### 使用
+
+1. 运行 `echo-aec.exe`
+2. 选择三个设备（首次选择后会自动保存到 exe 同级的 `config.json`）：
+   - 麦克风（真实输入设备）
+   - Loopback 设备（要监听的输出设备，如 HDMI/扬声器）
+   - 虚拟麦克风（Scream 设备）
+3. 点击"启动 AEC"，然后在会议软件中选择 Scream 作为麦克风
+4. 下次启动自动恢复上次选择的设备；若设备已拔出，界面会提示
+
+## 技术要点
+
+- WebRTC AEC3 内部自动管理 render buffer 和延迟估计，loopback 线程直接调用 `process_render_frame`，mic 线程直接调用 `process_capture_frame`
+- 不要手动管理参考信号的偏移/延迟，会与 AEC 内部延迟估计冲突
+- AEC 处理延迟约 9-10ms，评估效果时需考虑
+- 不要强制 `stream_delay_ms` 固定值，真实系统延迟约 8-16ms，强制错误值会导致滤波器发散（炸麦）
+
+## 依赖与许可证
+
+### Rust 后端依赖
+
+| 依赖 | 版本 | 用途 | 许可证 |
+|------|------|------|--------|
+| [tauri](https://github.com/tauri-apps/tauri) | 2 | 桌面应用框架 | MIT OR Apache-2.0 |
+| [webrtc-audio-processing](https://github.com/tonarino/webrtc-audio-processing) | ~2.0 | WebRTC AEC3 回声消除（核心算法） | 见下方说明* |
+| [flexaudio](https://github.com/Studio-Sadola/flexaudio) | 0.2 | 麦克风采集 + WASAPI Loopback | MIT |
+| [cpal](https://github.com/RustAudio/cpal) | 0.15 | 音频输出到虚拟设备 | Apache-2.0 |
+| [serde](https://github.com/serde-rs/serde) / serde_json | 1 | JSON 序列化 | MIT OR Apache-2.0 |
+| [anyhow](https://github.com/dtolnay/anyhow) | 1 | 错误处理 | MIT OR Apache-2.0 |
+| [tracing](https://github.com/tokio-rs/tracing) / tracing-subscriber | 0.1 / 0.3 | 日志 | MIT |
+| [parking_lot](https://github.com/Amanieu/parking_lot) | 0.12 | 互斥锁 | MIT OR Apache-2.0 |
+| [symphonia](https://github.com/pdeljanov/Symphonia) | 0.5 | 音频文件解码（仅测试用，dev-dependencies） | MPL-2.0 |
+
+\* **webrtc-audio-processing 许可证说明**：该 crate 封装了 WebRTC 的 AudioProcessing 模块（BSD 3-Clause）。上传 git 时需要附带 `licenses/` 目录下的许可证文件。
+
+### 前端依赖
+
+| 依赖 | 用途 | 许可证 |
+|------|------|--------|
+| [React](https://github.com/facebook/react) | UI 框架 | MIT |
+| [Vite](https://github.com/vitejs/vite) | 构建工具 | MIT |
+| [TailwindCSS](https://github.com/tailwindlabs/tailwindcss) | CSS 框架 | MIT |
+| [@tauri-apps/api](https://github.com/tauri-apps/tauri) | 前端与后端通信 | MIT OR Apache-2.0 |
+
+### 外部运行时依赖
+
+| 软件 | 用途 | 许可证 |
+|------|------|--------|
+| [Scream](https://github.com/duncanthrax/scream) | Windows 虚拟声卡驱动 | MS-PL (Microsoft Public License) |
+
+### 参考项目
+
+- [PipeWire](https://gitlab.freedesktop.org/pipewire/pipewire) - Linux 下的同类音频处理管线，本项目参考了其 WebRTC AEC 配置方式（MIT 许可证）
+
+## 项目结构
+
+```
+echo-aec/
+├── src-tauri/           # Tauri 桌面应用（Rust 后端）
+│   ├── Cargo.toml
+│   ├── tauri.conf.json
+│   ├── icons/
+│   └── src/
+│       ├── main.rs      # 应用入口 + Tauri 命令
+│       ├── config.rs    # 设备选择持久化 (config.json)
+│       ├── device.rs    # 设备枚举
+│       └── audio/
+│           ├── mod.rs
+│           ├── aec.rs   # WebRTC AEC 封装
+│           └── engine.rs # 音频引擎（3 线程）
+├── web-ui/              # React 前端
+│   └── src/App.jsx      # 设备选择 UI（Tauri invoke）
+├── audio-core/          # 旧版 HTTP 后端（已弃用，保留参考）
+├── tauri.bat            # Windows 构建脚本
+└── README.md
+```
 
 ## 运行
 

@@ -1,7 +1,12 @@
 # Build outputs
 audio-core/target/
+src-tauri/target/
+src-tauri/gen/
 web-ui/node_modules/
 web-ui/dist/
+
+# Runtime config
+src-tauri/config.json
 
 # Test WAV files
 *.wav

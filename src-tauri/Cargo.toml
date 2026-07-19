@@ -1,23 +1,24 @@
 [package]
-name = "echo-aec-core"
+name = "echo-aec"
 version = "0.1.0"
+description = "Echo AEC - Acoustic Echo Cancellation"
 edition = "2021"
 
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
 [dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 flexaudio = "0.2"
 cpal = "0.15"
 webrtc-audio-processing = { version = "~2.0", features = ["bundled"] }
 webrtc-audio-processing-config = "~2.0"
-axum = { version = "0.7", features = ["ws"] }
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-tower-http = { version = "0.5", features = ["cors"] }
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 parking_lot = "0.12"
-futures-util = "0.3"
 
 [dev-dependencies]
 symphonia = { version = "0.5", features = ["aac", "isomp4"] }

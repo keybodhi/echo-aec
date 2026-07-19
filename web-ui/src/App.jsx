@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 
 export default function App() {
   const [devices, setDevices] = useState({ mics: [], loopbacks: [], outputs: [] })
@@ -6,20 +7,57 @@ export default function App() {
   const [loopbackDevice, setLoopbackDevice] = useState('')
   const [virtualMicDevice, setVirtualMicDevice] = useState('')
   const [isRunning, setIsRunning] = useState(false)
+  const [notice, setNotice] = useState('')
 
   useEffect(() => {
-    fetch('/api/devices')
-      .then(r => r.json())
-      .then(setDevices)
-      .catch(console.error)
+    async function init() {
+      try {
+        const devs = await invoke('list_devices')
+        setDevices(devs)
+
+        const cfg = await invoke('get_config')
+        const missing = []
+
+        if (cfg.mic_device) {
+          if (devs.mics.some(d => d.id === cfg.mic_device)) {
+            setMicDevice(cfg.mic_device)
+          } else {
+            missing.push(`麦克风 "${cfg.mic_device}"`)
+          }
+        }
+        if (cfg.loopback_device) {
+          if (devs.loopbacks.some(d => d.id === cfg.loopback_device)) {
+            setLoopbackDevice(cfg.loopback_device)
+          } else {
+            missing.push(`监听设备 "${cfg.loopback_device}"`)
+          }
+        }
+        if (cfg.virtual_mic_device) {
+          if (devs.outputs.some(d => d.id === cfg.virtual_mic_device)) {
+            setVirtualMicDevice(cfg.virtual_mic_device)
+          } else {
+            missing.push(`虚拟麦克风 "${cfg.virtual_mic_device}"`)
+          }
+        }
+
+        if (missing.length > 0) {
+          setNotice(`上次的设备未找到: ${missing.join(', ')}`)
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    init()
   }, [])
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetch('/api/status')
-        .then(r => r.json())
-        .then(data => setIsRunning(data.is_running))
-        .catch(console.error)
+    const interval = setInterval(async () => {
+      try {
+        const data = await invoke('get_status')
+        setIsRunning(data.is_running)
+      } catch (e) {
+        console.error(e)
+      }
     }, 1000)
     return () => clearInterval(interval)
   }, [])
@@ -29,22 +67,23 @@ export default function App() {
       alert('请选择所有设备')
       return
     }
-    const res = await fetch('/api/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mic_device: micDevice,
-        loopback_device: loopbackDevice,
-        virtual_mic_device: virtualMicDevice,
-      }),
-    })
-    if (!res.ok) {
-      alert('启动失败: ' + await res.text())
+    try {
+      await invoke('start_processing', {
+        micDevice,
+        loopbackDevice,
+        virtualMicDevice,
+      })
+    } catch (e) {
+      alert('启动失败: ' + e)
     }
   }
 
   const handleStop = async () => {
-    await fetch('/api/stop', { method: 'POST' })
+    try {
+      await invoke('stop_processing')
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (
@@ -52,6 +91,12 @@ export default function App() {
       <div className="bg-gray-800 rounded-xl p-8 w-full max-w-lg space-y-6">
         <h1 className="text-2xl font-bold text-center">Echo AEC</h1>
         <p className="text-center text-sm text-gray-400">回声消除 - 虚拟音频设备</p>
+
+        {notice && (
+          <div className="bg-yellow-900/50 border border-yellow-600 rounded px-3 py-2 text-sm text-yellow-200">
+            {notice}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-2">
