@@ -1,15 +1,7 @@
+
+Copyright (c) 2020  Dario Mambro ( dario.mambro@gmail.com )
+Copyright (c) 2019  Hayati Ayguen ( h_ayguen@web.de )
 Copyright (c) 2013  Julien Pommier ( pommier@modartt.com )
-
-Based on original fortran 77 code from FFTPACKv4 from NETLIB,
-authored by Dr Paul Swarztrauber of NCAR, in 1985.
-
-As confirmed by the NCAR fftpack software curators, the following
-FFTPACKv5 license applies to FFTPACKv4 sources. My changes are
-released under the same terms.
-
-FFTPACK license:
-
-http://www.cisl.ucar.edu/css/software/fftpack5/ftpk.html
 
 Copyright (c) 2004 the University Corporation for Atmospheric
 Research ("UCAR"). All rights reserved. Developed by NCAR's
@@ -24,7 +16,7 @@ following conditions are met:
 Laboratory, the University Corporation for Atmospheric Research,
 nor the names of its sponsors or contributors may be used to
 endorse or promote products derived from this Software without
-specific prior written permission.
+specific prior written permission.  
 
 - Redistributions of source code must retain the above copyright
 notices, this list of conditions, and the disclaimer below.
@@ -43,3 +35,4 @@ EXEMPLARY, OR CONSEQUENTIAL DAMAGES OR OTHER LIABILITY, WHETHER IN AN
 ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
 SOFTWARE.
+
