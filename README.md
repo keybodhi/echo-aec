@@ -2,6 +2,14 @@
 
 基于 WebRTC AEC3 的实时回声消除工具（Windows 桌面应用）。通过虚拟音频设备将处理后的无回声麦克风信号提供给系统使用。
 
+## 许可证说明
+
+- **本项目代码**：MIT License（见根目录 `LICENSE`）
+- **VB-CABLE 驱动文件**（`src-tauri/resources/vbcable/`）：版权归 **Vincent Burel / VB-Audio** 所有，属 Donationware，**不受本项目 MIT 许可证约束**。依据其官方条款原样分发（AS IS，未做任何修改）：
+  - 来源：www.vb-cable.com
+  - VB-CABLE is a donationware, all participations are welcome.
+- **其他第三方依赖**：见 `licenses/` 目录及各依赖各自的许可证
+
 ## 架构
 
 ```
