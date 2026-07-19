@@ -109,14 +109,27 @@ async fn get_config() -> Result<SavedConfig, String> {
 /// 未修改的 VB-CABLE 官方安装程序（VB-Audio 许可允许原样捆绑分发）
 static VBCABLE_SETUP: &[u8] = include_bytes!("../resources/vbcable/VBCABLE_Setup_x64.exe");
 
+fn is_vbcable_installed() -> bool {
+    use cpal::traits::{DeviceTrait, HostTrait};
+    cpal::default_host()
+        .output_devices()
+        .map(|devs| {
+            devs.filter_map(|d| d.name().ok())
+                .any(|n| n.contains("CABLE Input"))
+        })
+        .unwrap_or(false)
+}
+
+fn launch_vbcable_setup() -> std::io::Result<()> {
+    let temp = std::env::temp_dir().join("VBCABLE_Setup_x64.exe");
+    std::fs::write(&temp, VBCABLE_SETUP)?;
+    std::process::Command::new(&temp).spawn()?;
+    Ok(())
+}
+
 #[tauri::command]
 async fn install_vbcable() -> Result<String, String> {
-    let temp = std::env::temp_dir().join("VBCABLE_Setup_x64.exe");
-    std::fs::write(&temp, VBCABLE_SETUP).map_err(|e| e.to_string())?;
-
-    // 安装程序自身请求管理员权限（UAC 提示中会显示 VB-Audio 品牌，满足分发条款）
-    std::process::Command::new(&temp)
-        .spawn()
+    launch_vbcable_setup()
         .map_err(|e| format!("启动安装程序失败: {}", e))?;
 
     Ok("VB-CABLE 安装程序已启动，请按提示点击 Install Driver，完成后建议重启电脑".to_string())
@@ -147,6 +160,14 @@ async fn refresh_devices(
 
 fn main() {
     tracing_subscriber::fmt::init();
+
+    // 首次运行自动安装虚拟声卡：延迟 2 秒让应用窗口先出现，再弹 UAC
+    if !is_vbcable_installed() {
+        std::thread::spawn(|| {
+            std::thread::sleep(std::time::Duration::from_secs(2));
+            let _ = launch_vbcable_setup();
+        });
+    }
 
     let device_mgr = DeviceManager::new().expect("Failed to enumerate audio devices");
     let audio_engine = AudioEngine::new();
