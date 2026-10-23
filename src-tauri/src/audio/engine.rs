@@ -3,11 +3,14 @@ use flexaudio::{open, StreamConfig, SourceKind};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 use parking_lot::Mutex;
 
 use super::aec::{AecProcessor, FRAME_SIZE};
 
 const MAX_BUFFER_SIZE: usize = 96000;
+// poll_chunk is nonblocking. Yield while empty instead of occupying a CPU core.
+const IDLE_POLL_INTERVAL: Duration = Duration::from_millis(1);
 
 pub struct AudioEngine {
     is_running: bool,
@@ -82,6 +85,8 @@ impl AudioEngine {
                             let _ = aec_for_loopback.process_render_frame(&mut ref_frame);
                         }
                     }
+                } else {
+                    std::thread::sleep(IDLE_POLL_INTERVAL);
                 }
             }
 
@@ -133,6 +138,8 @@ impl AudioEngine {
                             }
                         }
                     }
+                } else {
+                    std::thread::sleep(IDLE_POLL_INTERVAL);
                 }
             }
 
